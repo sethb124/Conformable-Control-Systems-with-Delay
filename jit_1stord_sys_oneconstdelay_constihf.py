@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from jitcdde import jitcdde, y, t
+import control as ct
 
 alphas = [1, 0.66, 0.33]
 # alphas = np.linspace(1, 0, 3)
@@ -27,4 +28,16 @@ for i, (system, alpha) in enumerate(zip(systems, alphas)):
 	axs[i].set_title('$\\alpha=$' + str(alpha))
 	axs[i].legend()
 	axs[i].margins(0, 0.1)
+
+# the control package may allow us to find
+# u(t), but I don't think it'd be able to
+# once a delay is introduced
+A = [[0, 1], [-0.64, -0.16]]
+B = [[0], [1]]
+Q = [[0.001, 0], [0, 0.001]]
+R = 1
+
+K, _, _ = ct.lqr(A, B, Q, R)
+
+
 plt.show()
