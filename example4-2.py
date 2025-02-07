@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.ma import exp, cos
 import matplotlib.pyplot as plt
+from sys import argv
 
 def z(t):
 	return 5 * exp(-0.09 * t) * cos(0.6 * t)
@@ -73,7 +74,9 @@ for axis, alpha in zip(axes, alphas):
 	axis[1].legend()
 	axis[1].margins(x=0)
 
-# pick exactly one of these and comment out the other one
-# generally you don't want to save the plot locally
-plt.show()
-# plt.savefig('figure4-2.png')
+# you can use -s to save the plot to a file
+# generally you don't want to do this
+if len(argv) == 2 and argv[1] == '-s':
+	plt.savefig(argv[0][:-3] + '.png')
+else:
+	plt.show()
