@@ -1,3 +1,4 @@
+import enum
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,24 +12,37 @@ Q = 0.001 * np.identity(2)
 R = 1
 tf = 20
 dt = 0.001
-alpha = 0.33
 t_dis = np.arange(0, tf + dt, dt)
 
-S = np.empty((t_dis.size, 2, 2))
-S[-1] = Sf
+alphas = [0.34, 0.66, 1]
 
-for i in range(t_dis.size - 1, 0, -1):
-    dSdt = -(dt * (i + 1)) ** (alpha - 1) * (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i] + Q)
-    S[i - 1] = S[i] - dt * dSdt;
-    # print(S[i])
-x = np.empty((t_dis.size, 2, 1))
-x[0] = np.c_[[10, 3]]
+plt.rcParams["font.size"] = 8
+fig, axes = plt.subplots(len(alphas), 2)
+fig.tight_layout(rect=(0, 0, 1, 0.95), pad=1.5)
 
-u = np.empty(t_dis.size - 1)
+for axis, alpha in zip(axes, alphas):
+	S = np.empty((t_dis.size, 2, 2))
+	S[-1] = Sf
 
-for i in range(0, t_dis.size - 1):
-    u[i] = -(B.T @ S[i] @ x[i]).item()
-    x[i + 1] = x[i] + (dt * (i + 2)) ** (alpha - 1) * dt * (A @ x[i] + B * u[i])
-fig, axs = plt.subplots(1, 1)
-axs.plot(t_dis[:-1], u)
-plt.show()
+	for i in range(t_dis.size - 1, 0, -1):
+		dSdt = -(dt * (i + 1)) ** (alpha - 1) * (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i] + Q)
+		S[i - 1] = S[i] - dt * dSdt;
+		# print(S[i])
+	x = np.empty((t_dis.size, 2, 1))
+	x[0] = np.c_[[10, 3]]
+
+	u = np.empty(t_dis.size)
+
+	for i in range(0, t_dis.size - 1):
+		u[i] = -(B.T @ S[i] @ x[i]).item()
+		x[i + 1] = x[i] + (dt * (i + 2)) ** (alpha - 1) * dt * (A @ x[i] + B * u[i])
+	u[-1] = -(B.T @ S[-1] @ x[-1]).item()
+	axis[0].plot(t_dis, u)
+	axis[0].set_title(f'$\\alpha = {alpha}$')
+	axis[0].margins(x=0)
+	axis[1].plot(t_dis, x[:,0], label='Position [m]')
+	axis[1].plot(t_dis, x[:,1], label='Velocity [m/s]', color='gold')
+	axis[1].legend()
+	axis[1].margins(x=0)
+# plt.show()
+plt.savefig('figure1.png')
