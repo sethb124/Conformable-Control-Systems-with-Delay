@@ -37,6 +37,7 @@ for axis, alpha in zip(axes, alphas):
 		u[i] = -(B.T @ S[i] @ x[i]).item()
 		x[i + 1] = x[i] + (dt * (i + 2)) ** (alpha - 1) * dt * (A @ x[i] + B * u[i])
 	u[-1] = -(B.T @ S[-1] @ x[-1]).item()
+
 	axis[0].plot(t_dis, u)
 	axis[0].set_title(f'$\\alpha = {alpha}$')
 	axis[0].margins(x=0)
