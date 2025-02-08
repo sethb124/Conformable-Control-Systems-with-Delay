@@ -10,14 +10,13 @@ delta = 0.1
 A = np.matrix([[0, 1], [-omega ** 2, -2 * delta * omega]])
 B = np.c_[[0, 1]]
 Q = 0.001 * np.identity(2)
-r = 1
 tf = 20
 dt = 0.001
 t_dis = np.arange(0, tf + dt, dt)
 Sf = np.matrix('3 0; 0 1')
 
 # these are the conformable derivatives we want
-alphas = [0.34, 0.66, 1]
+alphas = [0.34, 0.67, 1]
 
 # set up plotting
 plt.rcParams["font.size"] = 8
@@ -26,7 +25,7 @@ fig.tight_layout(rect=(0, 0, 1, 0.95), pad=1.5)
 
 # loop over rows of plot and alphas
 for axis, alpha in zip(axes, alphas):
-	# S is an empty array of 2x2 matrices
+	# S is an empty array of matrices
 	# with last element given by Sf
 	S = np.empty((t_dis.size, 2, 2))
 	S[-1] = Sf
@@ -37,7 +36,7 @@ for axis, alpha in zip(axes, alphas):
 		dSdt = -(dt * (i + 1)) ** (alpha - 1) * (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i] + Q)
 		S[i - 1] = S[i] - dt * dSdt;
 
-	# x is an array of 2x1 column vectors
+	# x is an array of column vectors
 	x = np.empty((t_dis.size, 2, 1))
 	x[0] = np.c_[[10, 3]]
 	# u is an array of real #s
@@ -64,6 +63,6 @@ for axis, alpha in zip(axes, alphas):
 # you can use -s to save the plot to a file
 # generally you don't want to do this
 if len(argv) == 2 and argv[1] == '-s':
-	plt.savefig('figure4-1.png')
+	plt.savefig(argv[0][:-3] + '.png')
 else:
 	plt.show()

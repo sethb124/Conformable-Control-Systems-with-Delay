@@ -15,7 +15,6 @@ A = np.matrix([[0, 1], [-omega ** 2, -2 * delta * omega]])
 B = np.c_[[0, 1]]
 C = np.matrix('1 0')
 q = 0.001
-r = 1
 p = 3
 tf = 50
 dt = 0.001
@@ -24,7 +23,7 @@ Sf = p * C.T @ C
 vf = C.T * p * z(tf)
 
 # these are the conformable derivatives we want
-alphas = [0.34, 0.66, 1]
+alphas = [0.34, 0.67, 1]
 
 # set up plotting
 plt.rcParams["font.size"] = 8
@@ -33,7 +32,7 @@ fig.tight_layout(rect=(0, 0, 1, 0.95), pad=1.5)
 
 # loop over rows of plot and alphas
 for axis, alpha in zip(axes, alphas):
-	# S is an empty array of 2x2 matrices
+	# S is an empty array of matrices
 	# with last element given by Sf
 	S = np.empty((t_dis.size, 2, 2))
 	S[-1] = Sf
@@ -44,13 +43,17 @@ for axis, alpha in zip(axes, alphas):
 		dSdt = -(dt * (i + 1)) ** (alpha - 1) * (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i] + q * C.T @ C)
 		S[i - 1] = S[i] - dt * dSdt;
 
+	# v is an output equation or something idk
+	# it's needed to solve for stuff
+	# in example 4.1, it was 0
 	v = np.empty((t_dis.size, 2, 1))
 	v[-1] = vf
+
 	for i in range(t_dis.size - 1, 0, -1):
-		dvdt = -(dt * (i + 1)) ** (alpha - 1) * ((A - B @ B.T).T @ v[i] + q * C.T * z(dt * (i + 1)))
+		dvdt = -(dt * (i + 1)) ** (alpha - 1) * ((A - B @ B.T @ S[i]).T @ v[i] + q * C.T * z(dt * (i + 1)))
 		v[i - 1] = v[i] - dt * dvdt
 
-	# x is an array of 2x1 column vectors
+	# x is an array of column vectors
 	x = np.empty((t_dis.size, 2, 1))
 	x[0] = np.c_[[10, 3]]
 	# u is an array of real #s
