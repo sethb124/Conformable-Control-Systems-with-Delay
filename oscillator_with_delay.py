@@ -15,6 +15,7 @@ delta = 0.1
 A = np.matrix([[0, 1], [-omega ** 2, -2 * delta * omega]])
 B = np.c_[[0, 1]]
 Q = 0.001 * np.identity(2)
+# Q = np.identity(2)
 tf = 20
 dt = 0.001
 ts = np.arange(0, tf + dt, dt)
@@ -33,8 +34,10 @@ fig.tight_layout(rect=(0, 0, 1, 0.95), pad=1.5)
 for axis, alpha in zip(axes, alphas):
     # S is an empty array of matrices
     # with last element given by Sf
-    S = np.empty((ts.size, 2, 2))
-    S[-1] = Sf
+    S = np.empty((ts.size + delay, 2, 2))
+    S[ts.size - 1] = Sf
+    for i in range(ts.size, ts.size + delay):
+        S[i] = np.identity(2)
     for i in range(0, delay):
         S[i] = -(dt * i) ** alpha / alpha * Q
 
@@ -42,7 +45,7 @@ for axis, alpha in zip(axes, alphas):
     # this solves the Ricatti equation for t >= t_0 + h
     for i in range(ts.size - 1, delay, -1):
         dSdt = -(dt * (i + 1)) ** (alpha - 1) * \
-            (A.T @ S[i - delay] + S[i - delay] @ A - S[i] @ B @ B.T @ S[i] + Q)
+            (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i - delay] + Q)
         S[i - 1] = S[i] - dt * dSdt
     # I now basically have initial conditions, so
     # I could theoretically go forward and solve,
@@ -54,27 +57,36 @@ for axis, alpha in zip(axes, alphas):
     #     S[i + 1] = S[i] + dt * dSdt
 
     # x is an array of column vectors
-    x = np.empty((ts.size, 2, 1))
+    x = np.empty((ts.size + delay, 2, 1))
     x[0] = np.c_[[10, 3]]
     # u is an array of real #s
-    u = np.empty(ts.size)
+    u = np.empty(ts.size + delay)
+    # this tries to solve homogeneous equation for t < 0
+    # the problem is that the conformable derivative is
+    # not defined for values of t < 0
+    # for i in range(-1, -delay - 1, -1):
+    #     x[i] = x[i + 1] - (dt * (i + 1)) ** (alpha - 1) * dt * A @ x[i + 1]
+    #     u[i] = -(B.T @ S[i] @ x[i]).item()
+    for i in range(ts.size, ts.size + delay):
+        x[i] = np.c_[[10, 3]]
+        u[i] = -(B.T @ S[i] @ x[i]).item()
 
     # loop forward and solve state space equation
     # this also uses Euler's method as far as I can tell
     for i in range(0, ts.size - 1):
         u[i] = -(B.T @ S[i] @ x[i]).item()
         x[i + 1] = x[i] + (dt * (i + 2)) ** (alpha - 1) * \
-            dt * (A @ x[i] + B * u[i])
-    u[-1] = -(B.T @ S[-1] @ x[-1]).item()
+            dt * (A @ x[i - delay] + B * u[i - delay])
+    u[ts.size - 1] = -(B.T @ S[ts.size - 1] @ x[ts.size - 1]).item()
 
     # plot u (1st column)
-    axis[0].plot(ts, u)
+    axis[0].plot(ts, u[0:ts.size])
     axis[0].set_title(f'$\\alpha = {alpha}$')
     axis[0].margins(x=0)
 
     # plot x1 and x2 (2nd column)
-    axis[1].plot(ts, x[:, 0], label='Position [m]')
-    axis[1].plot(ts, x[:, 1], label='Velocity [m/s]', color='gold')
+    axis[1].plot(ts, x[:ts.size, 0], label='Position [m]')
+    axis[1].plot(ts, x[:ts.size, 1], label='Velocity [m/s]', color='gold')
     axis[1].legend()
     axis[1].margins(x=0)
 
