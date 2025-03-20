@@ -19,8 +19,8 @@ Q = 0.001 * np.identity(2)
 tf = 20
 dt = 0.001
 ts = np.arange(0, tf + dt, dt)
-delay = int(10 / dt)
-Sf = np.matrix('3 0; 0 1')
+delay = int(5 / dt)
+Sf = np.matrix('1 0; 0 1')
 
 # these are the conformable derivatives we want
 alphas = [0.34, 0.67, 1]
@@ -41,21 +41,22 @@ for axis, alpha in zip(axes, alphas):
         S[i] = np.identity(2)
     for i in range(0, delay):
         S[i] = -(dt * i) ** alpha / alpha * Q
+        # S[i] = Q
 
-    # loop backward and do Euler's method to find S
-    # this solves the Ricatti equation for t >= t_0 + h
-    for i in range(ts.size - 1, delay, -1):
-        dSdt = -(dt * (i + 1)) ** (alpha - 1) * \
-            (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i - delay] + Q)
-        S[i - 1] = S[i] - dt * dSdt
     # I now basically have initial conditions, so
     # I could theoretically go forward and solve,
     # but this gives a vastly different solution
     # and kinda ignores the final condition
-    # for i in range(delay - 1, ts.size - 1):
-    #     dSdt = -(dt * (i - 1)) ** (alpha - 1) * \
-    #         (A.T @ S[i - delay] + S[i - delay] @ A - S[i] @ B @ B.T @ S[i] + Q)
-    #     S[i + 1] = S[i] + dt * dSdt
+    for i in range(delay - 1, ts.size - delay):
+        dSdt = -(dt * (i - 1)) ** (alpha - 1) * \
+            (A.T @ S[i - delay] + S[i - delay] @ A - S[i] @ B @ B.T @ S[i] + Q)
+        S[i + 1] = S[i] + dt * dSdt
+    # loop backward and do Euler's method to find S
+    # this solves the Ricatti equation for t >= t_f - h
+    for i in range(ts.size - 1, ts.size - delay, -1):
+        dSdt = -(dt * (i + 1)) ** (alpha - 1) * \
+            (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i - delay] + Q)
+        S[i - 1] = S[i] - dt * dSdt
 
     # x is an array of column vectors
     x = np.empty((ts.size + delay, 2, 1))
