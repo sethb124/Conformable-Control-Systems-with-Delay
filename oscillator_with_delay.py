@@ -14,12 +14,12 @@ delta = 0.1
 # setting up the system
 A = np.matrix([[0, 1], [-omega ** 2, -2 * delta * omega]])
 B = np.c_[[0, 1]]
-Q = 0.001 * np.identity(2)
-# Q = np.identity(2)
+# Q = 0.001 * np.identity(2)
+Q = np.identity(2)
 tf = 20
 dt = 0.001
 ts = np.arange(0, tf + dt, dt)
-delay = int(10 / dt)
+delay = int(1 / dt)
 Sf = np.matrix('3 0; 0 1')
 
 # these are the conformable derivatives we want
@@ -27,26 +27,42 @@ alphas = [0.34, 0.67, 1]
 
 # set up plotting
 plt.rcParams["font.size"] = 8
-fig, axes = plt.subplots(len(alphas), 2)
+fig, axes = plt.subplots(len(alphas), 3)
 # fig, axes = plt.subplots(len(alphas), 2)
 fig.tight_layout(rect=(0, 0, 1, 0.95), pad=1.5)
 
 # loop over rows of plot and alphas
 for axis, alpha in zip(axes, alphas):
+    # S_nodelay is an empty array of matrices
+    # with last element given by S_nodelayf
+    S_nodelay = np.empty((ts.size, 2, 2))
+    S_nodelay[-1] = Sf
+
+    # loop backward and do Euler's method to find S_nodelay
+    # this solves the Ricatti equation
+    for i in range(ts.size - 1, 0, -1):
+        dSdt = -(dt * (i + 1)) ** (alpha - 1) * \
+            (A.T @ S_nodelay[i] + S_nodelay[i] @ A -
+             S_nodelay[i] @ B @ B.T @ S_nodelay[i] + Q)
+        S_nodelay[i - 1] = S_nodelay[i] - dt * dSdt
     # S is an empty array of matrices
     # with last element given by Sf
-    S = np.empty((ts.size + delay, 2, 2))
+    S = np.zeros((ts.size + delay, 2, 2))
     S[ts.size - 1] = Sf
     for i in range(ts.size, ts.size + delay):
-        S[i] = np.identity(2)
+        # S[i] = np.identity(2)
+        S[i] = Q
     for i in range(0, delay):
         S[i] = -(dt * i) ** alpha / alpha * Q
+
+    # for i in range(delay, 0, -1):
+    #     S_nodelay[i - 1] = S[i - 1]
 
     # loop backward and do Euler's method to find S
     # this solves the Ricatti equation for t >= t_0 + h
     for i in range(ts.size - 1, delay, -1):
         dSdt = -(dt * (i + 1)) ** (alpha - 1) * \
-            (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S[i - delay] + Q)
+            (A.T @ S[i] + S[i] @ A - S[i] @ B @ B.T @ S_nodelay[i - delay] + Q)
         S[i - 1] = S[i] - dt * dSdt
     # I now basically have initial conditions, so
     # I could theoretically go forward and solve,
@@ -94,9 +110,12 @@ for axis, alpha in zip(axes, alphas):
     axis[1].plot(ts, x[:ts.size, 1], label='Velocity [m/s]', color='gold')
     axis[1].legend()
     axis[1].margins(x=0)
-    # axis.plot(ts, S[:ts.size, 0, 0])
-    # axis.plot(ts, S[:ts.size, 0, 1])
-    # axis.plot(ts, S[:ts.size, 1, 1])
+
+    axis[2].plot(ts, S[:ts.size, 0, 0])
+    axis[2].plot(ts, S[:ts.size, 0, 1])
+    axis[2].plot(ts, S[:ts.size, 1, 1])
+    axis[2].legend()
+    axis[2].margins(x=0)
 
 # you can use -s to save the plot to a file
 # generally you don't want to do this
